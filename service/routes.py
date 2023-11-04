@@ -1,4 +1,5 @@
-# Copyright 2016, 2019 John J. Rofrano. All Rights Reserved.
+######################################################################
+# Copyright 2016, 2023 John J. Rofrano. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,32 +12,25 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+######################################################################
 
+# spell: ignore Rofrano jsonify restx dbname
 """
-Pet Store Service
-
-Paths:
-------
-GET /pets - Returns a list all of the Pets
-GET /pets/{id} - Returns the Pet with a given id number
-POST /pets - creates a new Pet record in the database
-PUT /pets/{id} - updates a Pet record in the database
-DELETE /pets/{id} - deletes a Pet record in the database
+Pet Store Service with UI
 """
-
-from flask import jsonify, request, url_for, abort
-from service.models import Pet
+from flask import jsonify, request, url_for, make_response, abort
+from service.models import Pet, Gender
 from service.common import status  # HTTP Status Codes
-from . import app  # Import Flask application
+from . import app
 
 
 ######################################################################
 # GET HEALTH CHECK
 ######################################################################
 @app.route("/health")
-def health():
+def healthcheck():
     """Let them know our heart is still beating"""
-    return jsonify(status=200, message="Healthy"), status.HTTP_200_OK
+    return make_response(jsonify(status=200, message="OK"), status.HTTP_200_OK)
 
 
 ######################################################################
@@ -44,16 +38,8 @@ def health():
 ######################################################################
 @app.route("/")
 def index():
-    """Root URL response"""
-    app.logger.info("Request for Root URL")
-    return (
-        jsonify(
-            name="Pet Demo REST API Service",
-            version="1.0",
-            paths=url_for("list_pets", _external=True),
-        ),
-        status.HTTP_200_OK,
-    )
+    """Base URL for our service"""
+    return app.send_static_file("index.html")
 
 
 ######################################################################
@@ -62,20 +48,37 @@ def index():
 @app.route("/pets", methods=["GET"])
 def list_pets():
     """Returns all of the Pets"""
-    app.logger.info("Request for pet list")
+    app.logger.info("Request to list Pets...")
+
     pets = []
     category = request.args.get("category")
     name = request.args.get("name")
+    available = request.args.get("available")
+    gender = request.args.get("gender")
+
     if category:
+        app.logger.info("Find by category: %s", category)
         pets = Pet.find_by_category(category)
     elif name:
+        app.logger.info("Find by name: %s", name)
         pets = Pet.find_by_name(name)
+    elif available:
+        app.logger.info("Find by available: %s", available)
+        # create bool from string
+        available_value = available.lower() in ["true", "yes", "1"]
+        pets = Pet.find_by_availability(available_value)
+    elif gender:
+        app.logger.info("Find by gender: %s", gender)
+        # create enum from string
+        gender_value = getattr(Gender, gender.upper())
+        pets = Pet.find_by_gender(gender_value)
     else:
+        app.logger.info("Find all")
         pets = Pet.all()
 
     results = [pet.serialize() for pet in pets]
-    app.logger.info("Returning %d pets", len(results))
-    return jsonify(results), status.HTTP_200_OK
+    app.logger.info("[%s] Pets returned", len(results))
+    return make_response(jsonify(results), status.HTTP_200_OK)
 
 
 ######################################################################
@@ -88,17 +91,18 @@ def get_pets(pet_id):
 
     This endpoint will return a Pet based on it's id
     """
-    app.logger.info("Request for pet with id: %s", pet_id)
+    app.logger.info("Request to Retrieve a pet with id [%s]", pet_id)
+
     pet = Pet.find(pet_id)
     if not pet:
         abort(status.HTTP_404_NOT_FOUND, f"Pet with id '{pet_id}' was not found.")
 
     app.logger.info("Returning pet: %s", pet.name)
-    return jsonify(pet.serialize()), status.HTTP_200_OK
+    return make_response(jsonify(pet.serialize()), status.HTTP_200_OK)
 
 
 ######################################################################
-# ADD A NEW PET
+# CREATE A NEW PET
 ######################################################################
 @app.route("/pets", methods=["POST"])
 def create_pets():
@@ -106,16 +110,19 @@ def create_pets():
     Creates a Pet
     This endpoint will create a Pet based the data in the body that is posted
     """
-    app.logger.info("Request to create a pet")
+    app.logger.info("Request to Create a Pet...")
     check_content_type("application/json")
+
+    data = request.get_json()
+    app.logger.info("Processing: %s", data)
     pet = Pet()
-    pet.deserialize(request.get_json())
+    pet.deserialize(data)
     pet.create()
+    app.logger.info("Pet with new id [%s] saved!", pet.id)
+
     message = pet.serialize()
     location_url = url_for("get_pets", pet_id=pet.id, _external=True)
-
-    app.logger.info("Pet with ID [%s] created.", pet.id)
-    return jsonify(message), status.HTTP_201_CREATED, {"Location": location_url}
+    return make_response(jsonify(message), status.HTTP_201_CREATED, {"Location": location_url})
 
 
 ######################################################################
@@ -128,19 +135,19 @@ def update_pets(pet_id):
 
     This endpoint will update a Pet based the body that is posted
     """
-    app.logger.info("Request to update pet with id: %s", pet_id)
+    app.logger.info("Request to Update a pet with id [%s]", pet_id)
     check_content_type("application/json")
 
     pet = Pet.find(pet_id)
     if not pet:
         abort(status.HTTP_404_NOT_FOUND, f"Pet with id '{pet_id}' was not found.")
 
-    pet.deserialize(request.get_json())
+    data = request.get_json()
+    app.logger.info(data)
+    pet.deserialize(data)
     pet.id = pet_id
     pet.update()
-
-    app.logger.info("Pet with ID [%s] updated.", pet.id)
-    return jsonify(pet.serialize()), status.HTTP_200_OK
+    return make_response(jsonify(pet.serialize()), status.HTTP_200_OK)
 
 
 ######################################################################
@@ -153,13 +160,13 @@ def delete_pets(pet_id):
 
     This endpoint will delete a Pet based the id specified in the path
     """
-    app.logger.info("Request to delete pet with id: %s", pet_id)
+    app.logger.info("Request to Delete a pet with id [%s]", pet_id)
+
     pet = Pet.find(pet_id)
     if pet:
         pet.delete()
 
-    app.logger.info("Pet with ID [%s] delete complete.", pet_id)
-    return "", status.HTTP_204_NO_CONTENT
+    return make_response("", status.HTTP_204_NO_CONTENT)
 
 
 ######################################################################
@@ -176,20 +183,14 @@ def purchase_pets(pet_id):
             status.HTTP_409_CONFLICT,
             f"Pet with id '{pet_id}' is not available.",
         )
-
-    # At this point you would execute code to purchase the pet
-    # For the moment, we will just set them to unavailable
-
     pet.available = False
     pet.update()
-
-    return pet.serialize(), status.HTTP_200_OK
+    return make_response(jsonify(pet.serialize()), status.HTTP_200_OK)
 
 
 ######################################################################
 #  U T I L I T Y   F U N C T I O N S
 ######################################################################
-
 
 def check_content_type(content_type):
     """Checks that the media type is correct"""

@@ -1,3 +1,4 @@
+######################################################################
 # Copyright 2016, 2022 John J. Rofrano. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -11,7 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+######################################################################
 """
 Pet API Service Test Suite
 
@@ -23,16 +24,13 @@ Test cases can be run with the following:
   While debugging just these tests it's convenient to use this:
     nosetests --stop tests/test_service.py:TestPetService
 """
-
 import os
-import logging
 from unittest import TestCase
-
-# from unittest.mock import MagicMock, patch
+import logging
 from urllib.parse import quote_plus
 from service import app
 from service.common import status
-from service.models import db, init_db, Pet
+from service.models import db, init_db, Pet, Gender
 from tests.factories import PetFactory
 
 # Disable all but critical errors during normal test run
@@ -47,10 +45,11 @@ BASE_URL = "/pets"
 
 
 ######################################################################
-#  T E S T   P E T   S E R V I C E
+#  T E S T   C A S E S
 ######################################################################
-class TestPetService(TestCase):
-    """Pet Server Tests"""
+# pylint: disable=too-many-public-methods
+class TestPetRoutes(TestCase):
+    """Pet Service tests"""
 
     @classmethod
     def setUpClass(cls):
@@ -76,7 +75,10 @@ class TestPetService(TestCase):
     def tearDown(self):
         db.session.remove()
 
-    def _create_pets(self, count):
+    ############################################################
+    # Utility function to bulk create pets
+    ############################################################
+    def _create_pets(self, count: int = 1) -> list:
         """Factory method to create pets in bulk"""
         pets = []
         for _ in range(count):
@@ -90,25 +92,25 @@ class TestPetService(TestCase):
             pets.append(test_pet)
         return pets
 
-    ######################################################################
+    ############################################################
     #  T E S T   C A S E S
-    ######################################################################
-
+    ############################################################
     def test_index(self):
-        """It should call the Home Page"""
+        """It should return the index page"""
         response = self.client.get("/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        data = response.get_json()
-        self.assertEqual(data["name"], "Pet Demo REST API Service")
+        self.assertIn(b"Pet Demo REST API Service", response.data)
 
     def test_health(self):
         """It should be healthy"""
-        response = self.client.get("/healthcheck")
+        response = self.client.get("/health")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         data = response.get_json()
-        self.assertEqual(data["status"], 200)
-        self.assertEqual(data["message"], "Healthy")
+        self.assertEqual(data['message'], 'OK')
 
+    # ----------------------------------------------------------
+    # TEST LIST
+    # ----------------------------------------------------------
     def test_get_pet_list(self):
         """It should Get a list of Pets"""
         self._create_pets(5)
@@ -117,6 +119,9 @@ class TestPetService(TestCase):
         data = response.get_json()
         self.assertEqual(len(data), 5)
 
+    # ----------------------------------------------------------
+    # TEST READ
+    # ----------------------------------------------------------
     def test_get_pet(self):
         """It should Get a single Pet"""
         # get the id of a pet
@@ -134,6 +139,9 @@ class TestPetService(TestCase):
         logging.debug("Response data = %s", data)
         self.assertIn("was not found", data["message"])
 
+    # ----------------------------------------------------------
+    # TEST CREATE
+    # ----------------------------------------------------------
     def test_create_pet(self):
         """It should Create a new Pet"""
         test_pet = PetFactory()
@@ -161,6 +169,33 @@ class TestPetService(TestCase):
         self.assertEqual(new_pet["available"], test_pet.available)
         self.assertEqual(new_pet["gender"], test_pet.gender.name)
 
+    def test_create_pet_with_no_name(self):
+        """It should not Create a Pet without a name"""
+        pet = self._create_pets()[0]
+        new_pet = pet.serialize()
+        del new_pet["name"]
+        logging.debug("Pet no name: %s", new_pet)
+        response = self.client.post(BASE_URL, json=new_pet)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_create_pet_no_content_type(self):
+        """It should not Create a Pet with no Content-Type"""
+        response = self.client.post(BASE_URL, data="bad data")
+        self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
+
+    def test_create_pet_wrong_content_type(self):
+        """It should not Create a Pet with wrong Content-Type"""
+        response = self.client.post(BASE_URL, data={}, content_type="plain/text")
+        self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
+
+    def test_call_create_with_an_id(self):
+        """It should not allow calling endpoint incorrectly"""
+        response = self.client.post(f"{BASE_URL}/0", json={})
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    # ----------------------------------------------------------
+    # TEST UPDATE
+    # ----------------------------------------------------------
     def test_update_pet(self):
         """It should Update an existing Pet"""
         # create a pet to update
@@ -177,15 +212,59 @@ class TestPetService(TestCase):
         updated_pet = response.get_json()
         self.assertEqual(updated_pet["category"], "unknown")
 
+    def test_update_pet_with_no_name(self):
+        """It should not Update a Pet without assigning a name"""
+        pet = self._create_pets()[0]
+        pet_data = pet.serialize()
+        del pet_data["name"]
+        response = self.client.put(f"{BASE_URL}/{pet.id}", json=pet_data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_update_pet_not_found(self):
+        """It should not Update a Pet that doesn't exist"""
+        response = self.client.put(f"{BASE_URL}/foo", json={})
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    # ----------------------------------------------------------
+    # TEST DELETE
+    # ----------------------------------------------------------
     def test_delete_pet(self):
         """It should Delete a Pet"""
-        test_pet = self._create_pets(1)[0]
+        pets = self._create_pets(5)
+        pet_count = self.get_pet_count()
+        test_pet = pets[0]
         response = self.client.delete(f"{BASE_URL}/{test_pet.id}")
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(len(response.data), 0)
         # make sure they are deleted
         response = self.client.get(f"{BASE_URL}/{test_pet.id}")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        new_count = self.get_pet_count()
+        self.assertEqual(new_count, pet_count - 1)
+
+    def test_delete_non_existing_pet(self):
+        """It should Delete a Pet even if it doesn't exist"""
+        response = self.client.delete(f"{BASE_URL}/0")
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(len(response.data), 0)
+
+    # ----------------------------------------------------------
+    # TEST QUERY
+    # ----------------------------------------------------------
+    def test_query_by_name(self):
+        """It should Query Pets by name"""
+        pets = self._create_pets(5)
+        test_name = pets[0].name
+        name_count = len([pet for pet in pets if pet.name == test_name])
+        response = self.client.get(
+            BASE_URL, query_string=f"name={quote_plus(test_name)}"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(len(data), name_count)
+        # check the data just to be sure
+        for pet in data:
+            self.assertEqual(pet["name"], test_name)
 
     def test_query_pet_list_by_category(self):
         """It should Query Pets by Category"""
@@ -203,48 +282,57 @@ class TestPetService(TestCase):
         for pet in data:
             self.assertEqual(pet["category"], test_category)
 
-    ######################################################################
-    #  T E S T   S A D   P A T H S
-    ######################################################################
+    def test_query_by_availability(self):
+        """It should Query Pets by availability"""
+        pets = self._create_pets(10)
+        available_pets = [pet for pet in pets if pet.available is True]
+        unavailable_pets = [pet for pet in pets if pet.available is False]
+        available_count = len(available_pets)
+        unavailable_count = len(unavailable_pets)
+        logging.debug("Available Pets [%d] %s", available_count, available_pets)
+        logging.debug("Unavailable Pets [%d] %s", unavailable_count, unavailable_pets)
 
-    def test_create_pet_no_data(self):
-        """It should not Create a Pet with missing data"""
-        response = self.client.post(BASE_URL, json={})
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        # test for available
+        response = self.client.get(
+            BASE_URL, query_string="available=true"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(len(data), available_count)
+        # check the data just to be sure
+        for pet in data:
+            self.assertEqual(pet["available"], True)
 
-    def test_create_pet_no_content_type(self):
-        """It should not Create a Pet with no content type"""
-        response = self.client.post(BASE_URL)
-        self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
+        # test for unavailable
+        response = self.client.get(
+            BASE_URL, query_string="available=false"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(len(data), unavailable_count)
+        # check the data just to be sure
+        for pet in data:
+            self.assertEqual(pet["available"], False)
 
-    def test_create_pet_wrong_content_type(self):
-        """It should not Create a Pet with the wrong content type"""
-        response = self.client.post(BASE_URL, data="hello", content_type="text/html")
-        self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
+    def test_query_by_gender(self):
+        """It should Query Pets by gender"""
+        pets = self._create_pets(10)
+        female_pets = [pet for pet in pets if pet.gender == Gender.FEMALE]
+        female_count = len(female_pets)
+        logging.debug("Female Pets [%d] %s", female_count, female_pets)
 
-    def test_create_pet_bad_available(self):
-        """It should not Create a Pet with bad available data"""
-        test_pet = PetFactory()
-        logging.debug(test_pet)
-        # change available to a string
-        test_pet.available = "true"
-        response = self.client.post(BASE_URL, json=test_pet.serialize())
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        # test for available
+        response = self.client.get(BASE_URL, query_string="gender=female")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(len(data), female_count)
+        # check the data just to be sure
+        for pet in data:
+            self.assertEqual(pet["gender"], Gender.FEMALE.name)
 
-    def test_create_pet_bad_gender(self):
-        """It should not Create a Pet with bad gender data"""
-        pet = PetFactory()
-        logging.debug(pet)
-        # change gender to a bad string
-        test_pet = pet.serialize()
-        test_pet["gender"] = "male"    # wrong case
-        response = self.client.post(BASE_URL, json=test_pet)
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-    ######################################################################
-    #  T E S T   A C T I O N S
-    ######################################################################
-
+    # ----------------------------------------------------------
+    # TEST ACTION
+    # ----------------------------------------------------------
     def test_purchase_a_pet(self):
         """It should Purchase a Pet"""
         pets = self._create_pets(10)
@@ -267,19 +355,13 @@ class TestPetService(TestCase):
         self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
 
     ######################################################################
-    #  T E S T   M O C K S
+    # Utility functions
     ######################################################################
 
-    # @patch('service.routes.Pet.find_by_name')
-    # def test_bad_request(self, bad_request_mock):
-    #     """It should return a Bad Request error from Find By Name"""
-    #     bad_request_mock.side_effect = DataValidationError()
-    #     response = self.client.get(BASE_URL, query_string='name=fido')
-    #     self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-    # @patch('service.routes.Pet.find_by_name')
-    # def test_mock_search_data(self, pet_find_mock):
-    #     """It should showing how to mock data"""
-    #     pet_find_mock.return_value = [MagicMock(serialize=lambda: {'name': 'fido'})]
-    #     response = self.client.get(BASE_URL, query_string='name=fido')
-    #     self.assertEqual(response.status_code, status.HTTP_200_OK)
+    def get_pet_count(self):
+        """save the current number of pets"""
+        response = self.client.get(BASE_URL)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        # logging.debug("data = %s", data)
+        return len(data)

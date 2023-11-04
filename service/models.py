@@ -1,4 +1,4 @@
-# Copyright 2016, 2021 John Rofrano. All Rights Reserved.
+# Copyright 2016, 2023 John Rofrano. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the 'License');
 # you may not use this file except in compliance with the License.
@@ -36,12 +36,12 @@ from retry import retry
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 
-logger = logging.getLogger("flask.app")
-
 # global variables for retry (must be int)
 RETRY_COUNT = int(os.environ.get("RETRY_COUNT", 5))
 RETRY_DELAY = int(os.environ.get("RETRY_DELAY", 1))
 RETRY_BACKOFF = int(os.environ.get("RETRY_BACKOFF", 2))
+
+logger = logging.getLogger("flask.app")
 
 # Create the SQLAlchemy object to be initialized later in init_db()
 db = SQLAlchemy()
@@ -172,7 +172,7 @@ class Pet(db.Model):
         # This is where we initialize SQLAlchemy from the Flask app
         db.init_app(app)
         app.app_context().push()
-        db.create_all()  # make our sqlalchemy tables
+        db.create_all()  # make our SQLAlchemy tables
 
     @classmethod
     def all(cls) -> list:
