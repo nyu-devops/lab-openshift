@@ -1,0 +1,41 @@
+---
+# Python 3 with PostgreSQL
+version: "3"
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+    hostname: nyu
+    container_name: lab-flask-tdd
+    volumes:
+      - ..:/app
+    command: sleep infinity
+    environment:
+      FLASK_APP: service:app
+      FLASK_DEBUG: "True"
+      GUNICORN_BIND: "0.0.0.0:8000"
+      DATABASE_URI: postgresql+psycopg://postgres:pgs3cr3t@postgres:5432/petstore
+    networks:
+      - dev
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:15-alpine
+    # ports:
+    #   - 5432:5432
+    environment:
+      POSTGRES_PASSWORD: pgs3cr3t
+      POSTGRES_DB: petstore      
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    networks:
+      - dev
+
+volumes:
+  postgres:
+
+networks:
+  dev:
