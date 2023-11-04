@@ -28,13 +28,20 @@ category (string) - the category the pet belongs to (i.e., dog, cat)
 available (boolean) - True for pets that are available for adoption
 
 """
+import os
 import logging
 from enum import Enum
 from datetime import date
+from retry import retry
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 
 logger = logging.getLogger("flask.app")
+
+# global variables for retry (must be int)
+RETRY_COUNT = int(os.environ.get("RETRY_COUNT", 5))
+RETRY_DELAY = int(os.environ.get("RETRY_DELAY", 1))
+RETRY_BACKOFF = int(os.environ.get("RETRY_BACKOFF", 2))
 
 # Create the SQLAlchemy object to be initialized later in init_db()
 db = SQLAlchemy()
@@ -153,6 +160,7 @@ class Pet(db.Model):
     ##################################################
 
     @classmethod
+    @retry(Exception, delay=RETRY_DELAY, backoff=RETRY_BACKOFF, tries=RETRY_COUNT, logger=logger)
     def init_db(cls, app: Flask):
         """Initializes the database session
 
