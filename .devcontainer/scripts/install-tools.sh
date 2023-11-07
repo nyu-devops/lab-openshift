@@ -36,6 +36,21 @@ curl -Lo skaffold "https://storage.googleapis.com/skaffold/releases/latest/skaff
 sudo install skaffold /usr/local/bin/
 
 echo "**********************************************************************"
+echo "Installing Stern..."
+echo "**********************************************************************"
+curl -L -o stern.tar.gz "https://github.com/stern/stern/releases/download/v1.26.0/stern_1.26.0_linux_$ARCH.tar.gz"
+tar xvzf stern.tar.gz
+sudo install -c -m 0755 stern /usr/local/bin
+rm stern.tar.gz LICENSE
+
+echo "**********************************************************************"
+echo "Installing Knative CLI..."
+echo "**********************************************************************"
+curl -L -o kn "https://github.com/knative/client/releases/download/knative-v1.11.2/kn-darwin-$ARCH"
+sudo install -c -m 0755 kn /usr/local/bin
+rm kn
+
+echo "**********************************************************************"
 echo "Installing Tekton CLI..."
 echo "**********************************************************************"
 if [ $ARCH == amd64 ]; then

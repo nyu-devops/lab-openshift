@@ -8,7 +8,7 @@ services:
       context: ..
       dockerfile: .devcontainer/Dockerfile
     hostname: nyu
-    container_name: lab-flask-tdd
+    container_name: lab-openshift
     volumes:
       - ..:/app
     command: sleep infinity

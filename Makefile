@@ -86,10 +86,10 @@ clustertasks: ## Create Tekton Cluster Tasks
 .PHONY: knative
 knative: ## Install Knative
 	$(info Installing Knative in the Cluster...)
-	kubectl apply -f https://github.com/knative/serving/releases/download/knative-v1.8.3/serving-crds.yaml
-	kubectl apply -f https://github.com/knative/serving/releases/download/knative-v1.8.3/serving-core.yaml
-	kubectl apply -f https://github.com/knative/eventing/releases/download/knative-v1.8.5/eventing-crds.yaml
-	kubectl apply -f https://github.com/knative/eventing/releases/download/knative-v1.8.5/eventing-core.yaml
+	kubectl apply -f https://github.com/knative/serving/releases/download/knative-v1.12.0/serving-crds.yaml
+	kubectl apply -f https://github.com/knative/serving/releases/download/knative-v1.12.0/serving-core.yaml
+	# kubectl apply -f https://github.com/knative/eventing/releases/download/knative-v1.12.0/eventing-crds.yaml
+	# kubectl apply -f https://github.com/knative/eventing/releases/download/knative-v1.12.0/eventing-core.yaml
 
 .PHONY: deploy
 depoy: ## Deploy the service on local Kubernetes
