@@ -1,3 +1,5 @@
+# The petstore database should be created for you, if not here is the command:
+# psql -c "create database petstore;" -U postgres
 ---
 apiVersion: apps/v1
 kind: StatefulSet
@@ -40,7 +42,7 @@ spec:
                     key: postgres_db
           volumeMounts:
           - name: postgres-storage
-            mountPath: /var/lib/postgresql/data
+            mountPath: /var/lib/postgresql
           resources:
             limits:
               cpu: "0.50"
@@ -61,11 +63,11 @@ metadata:
   name: postgres-pvc
 spec:
   accessModes:
-    - ReadWriteMany
+    - ReadWriteOnce
   resources:
     requests:
       storage: 1Gi
-  storageClassName: ""
+  # storageClassName: default
 
 ---
 apiVersion: v1
