@@ -1,6 +1,6 @@
 // spell: disable
 {
-	"name": "Kubernetes",
+	"name": "OpenShift",
 	"dockerComposeFile": "docker-compose.yml",
 	"service": "app",
 	"workspaceFolder": "/app",

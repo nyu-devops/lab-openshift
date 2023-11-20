@@ -16,13 +16,13 @@ services:
       FLASK_APP: service:app
       FLASK_DEBUG: "True"
       GUNICORN_BIND: "0.0.0.0:8000"
-      DATABASE_URI: postgresql+psycopg://postgres:pgs3cr3t@postgresql:5432/petstore
+      DATABASE_URI: postgresql+psycopg://postgres:pgs3cr3t@postgres:5432/petstore
     networks:
       - dev
     depends_on:
       - postgres
 
-  postgresql:
+  postgres:
     image: postgres:15-alpine
     # ports:
     #   - 5432:5432
