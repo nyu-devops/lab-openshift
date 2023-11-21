@@ -1,0 +1,38 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: green
+spec:
+  workspaces:
+    - name: source
+  description: >-
+    This task can be used to perform unit tests with green.
+
+    If you define an environment variable called DATABASE_URI
+    it will surface that in the test environment so that you
+    can use it to connect to a test database.
+  params:
+    - name: ARGS
+      description: The additional arguments to be used with green
+      type: string
+      default: "-vvv --processes=1 --run-coverage --minimum-coverage=95"
+  steps:
+    - name: green
+      image: python:3.11-slim
+      workingDir: $(workspaces.source.path)
+      env:
+       - name: DATABASE_URI
+         valueFrom:
+           secretKeyRef:
+             name: postgres-creds
+             key: database_uri      
+      script: |
+        #!/bin/bash
+        set -e
+
+        echo "***** Installing dependencies *****"
+        python -m pip install --upgrade pip wheel
+        pip install -r requirements.txt
+
+        echo "***** Running Tests *****"
+        green $(params.ARGS)
