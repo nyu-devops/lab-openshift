@@ -6,26 +6,25 @@ spec:
   workspaces:
     - name: pipeline-workspace
   params:
-    - name: GIT_REPO
-      default: 'https://github.com/rofrano/lab-openshift.git'
-      description: 'URL of repo to clone '
+    - description: The URL to the git repo
+      name: GIT_REPO
       type: string
-    - name: GIT_BRANCH
-      default: master
-      description: Branch to clone
+    - default: master
+      description: The reference (branch or ref)
+      name: GIT_REF
       type: string
-    - name: IMAGE_NAME
-      default: >-
-        image-registry.openshift-image-registry.svc:5000/rofrano-dev/petstore:0.1.0
-      description: Name of image to build
+    - default: '-vvv --processes=1 --run-coverage --minimum-coverage=95'
+      description: Arguments for green testing
+      name: GREEN_ARGS
       type: string
-    - name: GREEN_ARGS
-      default: '-vvv --processes=1 --run-coverage --minimum-coverage=95'
-      description: Arguments to geen command
-      type: string
-    - name: APP_NAME
-      default: petstore
+    - default: petshop
       description: Name of the application
+      name: APP_NAME
+      type: string
+    - default: >-
+        image-registry.openshift-image-registry.svc:5000/$(context.pipelineRun.namespace)/$(params.APP_NAME):latest
+      description: The name of the image to build
+      name: IMAGE_NAME
       type: string
   tasks:
     - name: git-clone
@@ -33,7 +32,7 @@ spec:
         - name: url
           value: $(params.GIT_REPO)
         - name: revision
-          value: $(params.GIT_BRANCH)
+          value: $(params.GIT_REF)
         - name: refspec
           value: ''
         - name: submodules
@@ -69,25 +68,39 @@ spec:
       workspaces:
         - name: output
           workspace: pipeline-workspace
-    - name: flake8
+    - name: pylint
       params:
         - name: image
           value: 'docker.io/python:3.11-slim'
         - name: path
-          value: .
+          value: service
         - name: requirements_file
           value: requirements.txt
         - name: args
-          value:
-            - '--count'
-            - '--max-complexity=10'
-            - '--max-line-length=127'
-            - '--statistics'
+          value: []
+        - name: pip_conf_file
+          value: pip.conf
       runAfter:
         - git-clone
       taskRef:
         kind: Task
-        name: flake8
+        name: pylint
+      workspaces:
+        - name: source
+          workspace: pipeline-workspace
+    - name: testing
+      params:
+        - name: ARGS
+          value: $(params.GREEN_ARGS)
+        - name: SECRET_NAME
+          value: postgres-creds
+        - name: SECRET_KEY
+          value: database_uri
+      runAfter:
+        - git-clone
+      taskRef:
+        kind: Task
+        name: green
       workspaces:
         - name: source
           workspace: pipeline-workspace
@@ -115,37 +128,27 @@ spec:
         - name: SKIP_PUSH
           value: 'false'
       runAfter:
-        - flake8
-        - green
+        - pylint
+        - testing
       taskRef:
         kind: ClusterTask
         name: buildah
       workspaces:
         - name: source
           workspace: pipeline-workspace
-    - name: green
+    - name: deploy-image
       params:
-        - name: ARGS
-          value: $(params.GREEN_ARGS)
-      runAfter:
-        - git-clone
-      taskRef:
-        kind: Task
-        name: green
-      workspaces:
-        - name: source
-          workspace: pipeline-workspace
-    - name: openshift-client
-      params:
-        - name: SCRIPT
-          value: oc create deploy $(params.APP_NAME) --image $(params.IMAGE_NAME)
-        - name: VERSION
-          value: latest
+        - name: old_image_name
+          value: 'cluster-registry:32000/petshop:latest'
+        - name: image_name
+          value: $(params.IMAGE_NAME)
+        - name: manifest_dir
+          value: k8s
       runAfter:
         - buildah
       taskRef:
-        kind: ClusterTask
-        name: openshift-client
+        kind: Task
+        name: deploy-image
       workspaces:
-        - name: manifest-dir
+        - name: source
           workspace: pipeline-workspace
