@@ -29,10 +29,5 @@ spec:
         value: image-registry.openshift-image-registry.svc:5000/$(context.pipelineRun.namespace)/$(tt.params.git-repo-name):$(tt.params.git-revision)
       workspaces:
       - name: pipeline-workspace
-        volumeClaimTemplate:
-          spec:
-            accessModes:
-              - ReadWriteOnce
-            resources:
-              requests:
-                storage: 500Mi
+        persistentVolumeClaim:
+          claimName: pipeline-pvc
