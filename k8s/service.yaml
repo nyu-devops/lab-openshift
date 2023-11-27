@@ -2,13 +2,15 @@ apiVersion: v1
 kind: Service
 metadata:
   name: petshop
+  labels:
+    app: petshop
 spec:
   selector:
     app: petshop
   type: ClusterIP
-  internalTrafficPolicy: Local
+  internalTrafficPolicy: Cluster
   ports:
-    - name: http
+    - name: 8080-tcp
       protocol: TCP
       port: 8080
       targetPort: 8080

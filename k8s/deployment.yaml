@@ -19,13 +19,12 @@ spec:
       labels:
         app: petshop
     spec:
-      imagePullSecrets:
-      - name: all-icr-io
+      # imagePullSecrets:
+      # - name: all-icr-io
       restartPolicy: Always
       containers:
       - name: petshop
-        # image: cluster-registry:32000/petshop:1.0
-        image: petshop
+        image: cluster-registry:32000/petshop:latest
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080

@@ -1,0 +1,147 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: green
+  labels:
+    app.kubernetes.io/version: "0.1"
+  annotations:
+    tekton.dev/categories: Testing
+    tekton.dev/pipelines.minVersion: "0.17.0"
+    tekton.dev/tags: python, green
+    tekton.dev/displayName: "green tests"
+    tekton.dev/platforms: "linux/amd64"
+spec:
+  workspaces:
+    - name: source
+  description: >-
+    This task can be used to perform unit tests with green.
+
+    If you define a secret with the key `database_uri`
+    it will create an environment variable named DATABASE_URI
+    that can be used to connect to a test database.
+  params:
+    - name: ARGS
+      description: The additional arguments to be used with green
+      type: string
+      default: "-vvv --processes=1 --run-coverage --minimum-coverage=95"
+    - name: SECRET_NAME
+      description: The name of the secret containing a database_uri key
+      type: string
+      default: "postgres-creds"
+    - name: SECRET_KEY
+      description: The name of the key that contains the database uri
+      type: string
+      default: "database_uri"
+  steps:
+    - name: green
+      image: python:3.11-slim
+      workingDir: $(workspaces.source.path)
+      env:
+       - name: DATABASE_URI
+         valueFrom:
+           secretKeyRef:
+             name: $(params.SECRET_NAME)
+             key: $(params.SECRET_KEY)
+      script: |
+        #!/bin/bash
+        set -e
+
+        echo "***** Installing dependencies *****"
+        python -m pip install --upgrade pip wheel
+        pip install -qr requirements.txt
+
+        echo "***** Running Tests *****"
+        green $(params.ARGS)
+
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: deploy-image
+  labels:
+    app.kubernetes.io/version: "0.1"
+  annotations:
+    tekton.dev/categories: Deployment
+    tekton.dev/pipelines.minVersion: "0.17.0"
+    tekton.dev/tags: openshift, deploy
+    tekton.dev/displayName: "deploy image"
+    tekton.dev/platforms: "linux/amd64"
+spec:
+  workspaces:
+  - name: source  
+  description: >-
+    This task will update the deployment.yaml with the latest image name
+    and then apply that yaml file and it's service file.
+  params:
+  - name: old_image_name
+    description: The fully qualified name of the old image to replace
+    type: string
+  - name: image_name
+    description: The fully qualified name of the new image to deploy
+    type: string
+  - name: manifest_dir
+    description: The directory in source that contains yaml manifests
+    type: string
+    default: "k8s"
+  steps:
+    - name: deploy
+      image: quay.io/openshift/origin-cli:latest
+      workingDir: /workspace/source 
+      command: ["/bin/bash", "-c"]
+      args:
+        - |-
+          #!/bin/bash
+          set -e
+
+          echo Applying manifests in $(inputs.params.manifest_dir) directory
+
+          echo "*********************  DEPLOYMENT  ***********************"
+          echo "Deploying $(inputs.params.image_name) ..."
+
+          sed -i 's|'"$(inputs.params.old_image_name)"'|'"$(inputs.params.image_name)"'|g' $(inputs.params.manifest_dir)/deployment.yaml
+          cat $(inputs.params.manifest_dir)/deployment.yaml
+
+          echo "************************************************************"
+          echo "OC APPLY..."
+          oc apply -f $(inputs.params.manifest_dir)/deployment.yaml
+          oc apply -f $(inputs.params.manifest_dir)/service.yaml
+
+          echo "************************************************************"
+          sleep 3
+          echo "Pods:"
+          oc get pods
+          echo ""
+
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: apply-manifests
+  labels:
+    app.kubernetes.io/version: "0.1"
+  annotations:
+    tekton.dev/categories: Deployment
+    tekton.dev/pipelines.minVersion: "0.17.0"
+    tekton.dev/tags: openshift, deploy
+    tekton.dev/displayName: "deploy"
+    tekton.dev/platforms: "linux/amd64"
+spec:
+  workspaces:
+  - name: source  
+  description: >-
+    This task will deploy all of the yaml files in the manifest folder.
+  params:
+  - name: manifest_dir
+    description: The directory in source that contains yaml manifests
+    type: string
+    default: "k8s"
+  steps:
+    - name: apply
+      image: quay.io/openshift/origin-cli:latest
+      workingDir: /workspace/source 
+      command: ["/bin/bash", "-c"]
+      args:
+        - |-
+          echo Applying manifests in $(inputs.params.manifest_dir) directory
+          oc apply -f $(inputs.params.manifest_dir)
+          echo -----------------------------------
