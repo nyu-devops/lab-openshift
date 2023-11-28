@@ -100,7 +100,7 @@ depoy: ## Deploy the service on local Kubernetes
 # COMMANDS FOR BUILDING THE IMAGE
 ############################################################
 
-##@ Image Build
+##@ Image Build and Push
 
 .PHONY: init
 init: export DOCKER_BUILDKIT=1
@@ -110,14 +110,19 @@ init:	## Creates the buildx instance
 	docker buildx inspect --bootstrap
 
 .PHONY: build
-build:	## Build all of the project Docker images
+build:	## Build the project container image for local platform
 	$(info Building $(IMAGE) for $(PLATFORM)...)
 	docker build --rm --pull --tag $(IMAGE) .
+
+.PHONY: push
+push:	## Push the image to the container registry
+	$(info Pusing $(IMAGE) for $(PLATFORM)...)
+	docker push $(IMAGE)
 
 .PHONY: buildx
 buildx:	## Build multi-platform image with buildx
 	$(info Building multi-platform image $(IMAGE) for $(PLATFORM)...)
-	docker buildx build --file Dockerfile  --pull --platform=$(PLATFORM) --tag $(IMAGE) --push .
+	docker buildx build --file Dockerfile --pull --platform=$(PLATFORM) --tag $(IMAGE) --push .
 
 .PHONY: remove
 remove:	## Stop and remove the buildx builder
