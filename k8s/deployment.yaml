@@ -24,7 +24,7 @@ spec:
       restartPolicy: Always
       containers:
       - name: petshop
-        image: cluster-registry:32000/petshop:latest
+        image: cluster-registry:32000/petshop:1.0
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080
