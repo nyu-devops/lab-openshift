@@ -76,3 +76,7 @@ fi;
 sudo tar xvzf oc.tar.gz -C /usr/local/bin/ oc
 sudo ln -s /usr/local/bin/oc /usr/bin/oc
 rm oc.tar.gz
+
+echo "**********************************************************************"
+echo "Tools Installation Complete!"
+echo "**********************************************************************"
