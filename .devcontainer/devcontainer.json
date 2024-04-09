@@ -1,6 +1,6 @@
 // spell: disable
 {
-	"name": "OpenShift",
+	"name": "OpenShift Lab",
 	"dockerComposeFile": "docker-compose.yml",
 	"service": "app",
 	"workspaceFolder": "/app",
@@ -12,13 +12,14 @@
 					"editor.defaultFormatter": "ms-python.black-formatter",
 					"editor.formatOnSave": true
 				},
+				"git.mergeEditor": true,
 				"markdown-preview-github-styles.colorTheme": "light",
 				"makefile.extensionOutputFolder": "/tmp",
+				"python.testing.unittestEnabled": false,
+				"python.testing.pytestEnabled": true,			
 				"python.testing.pytestArgs": [
 					"tests"
 				],
-				"python.testing.unittestEnabled": false,
-				"python.testing.pytestEnabled": true,			
 				"files.exclude": {
 					"**/.git": true,
 					"**/.DS_Store": true,
@@ -26,7 +27,7 @@
 					"**/__pycache__": true,
 					"**/.pytest_cache": true
 				}
-			},			
+			},
 			"extensions": [
 				"ms-python.python",
 				"ms-python.vscode-pylance",
@@ -38,9 +39,11 @@
 				"ms-vscode.makefile-tools",
 				"tamasfe.even-better-toml",
 				"yzhang.markdown-all-in-one",
+				"DavidAnson.vscode-markdownlint",
+				"bierner.github-markdown-preview",
 				"hnw.vscode-auto-open-markdown-preview",
 				"bierner.markdown-preview-github-styles",
-				"davidanson.vscode-markdownlint",
+				"tamasfe.even-better-toml",
 				"donjayamanne.githistory",
 				"GitHub.vscode-pull-request-github",
 				"hbenl.vscode-test-explorer",

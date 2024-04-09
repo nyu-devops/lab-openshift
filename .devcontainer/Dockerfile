@@ -22,9 +22,10 @@ RUN groupadd --gid $USER_GID $USERNAME \
 
 # Set up the Python development environment
 WORKDIR /app
-COPY requirements.txt .
-RUN python -m pip install --upgrade pip wheel && \
-    pip install -r requirements.txt
+COPY pyproject.toml poetry.lock ./
+RUN sudo python -m pip install --upgrade pip poetry && \
+    sudo poetry config virtualenvs.create false && \
+    sudo poetry install
 
 ENV PORT 8080
 EXPOSE $PORT
