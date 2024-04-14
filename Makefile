@@ -77,6 +77,14 @@ tekton: ## Install Tekton
 	kubectl apply --filename https://storage.googleapis.com/tekton-releases/triggers/latest/interceptors.yaml
 	kubectl apply --filename https://storage.googleapis.com/tekton-releases/dashboard/latest/tekton-dashboard-release.yaml
 
+.PHONY: tekton-clean
+tekton-clean: ## Clean up all PipelineRuns and TaskRuns
+	$(info Cleaning up all PipelineRuns and TaskRuns...)
+	tkn taskrun ls
+	tkn taskrun rm --all -f
+	tkn pipelinerun ls
+	tkn pipelinerun rm --all -f
+
 .PHONY: clustertasks
 clustertasks: ## Create Tekton Cluster Tasks
 	$(info Creating Tekton Cluster Tasks...)
