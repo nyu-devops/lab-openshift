@@ -36,6 +36,12 @@ curl -Lo skaffold "https://storage.googleapis.com/skaffold/releases/latest/skaff
 sudo install skaffold /usr/local/bin/
 
 echo "**********************************************************************"
+echo "Installing DevSpace..."
+echo "**********************************************************************"
+curl -Lo devspace "https://github.com/loft-sh/devspace/releases/latest/download/devspace-linux-$ARCH"
+sudo install -c -m 0755 devspace /usr/local/bin
+
+echo "**********************************************************************"
 echo "Installing Stern..."
 echo "**********************************************************************"
 curl -L -o stern.tar.gz "https://github.com/stern/stern/releases/download/v1.26.0/stern_1.26.0_linux_$ARCH.tar.gz"

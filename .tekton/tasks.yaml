@@ -1,29 +1,94 @@
+# These are custom tasks that are not on Tekton Hub
+---
 apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
-  name: green
+  name: pylint
+  labels:
+    app.kubernetes.io/version: "0.4"
+  annotations:
+    tekton.dev/categories: Code Quality
+    tekton.dev/pipelines.minVersion: "0.17.0"
+    tekton.dev/tags: python, pylint, poetry
+    tekton.dev/displayName: "pylint"
+    tekton.dev/platforms: "linux/amd64,linux/s390x,linux/ppc64le"
+spec:
+  workspaces:
+    - name: source
+      description: The workspace with the source code.
+  description: >-
+    Use to run pylint on the provided input source. If Poetry is being used
+    it will detect the poetry.lock file and install via requirements export.
+  params:
+    - name: image
+      description: The container image with pylint
+      default: docker.io/python:3.11-slim  
+    - name: path
+      description: The path to the module which should be analyzed by pylint
+      default: "."
+      type: string
+    - name: args
+      description: The arguments to pass to the pylint CLI.
+      type: array
+      default: []
+    - name: requirements_file
+      description: The name of the requirements file inside the source location
+      default: "requirements.txt"
+  steps:
+    - name: pylint
+      image: $(params.image)
+      workingDir: $(workspaces.source.path)
+      script: |
+        #!/bin/bash
+        set -e
+        export PATH=$PATH:$HOME/.local/bin:
+
+        echo "***** Installing dependencies *****"
+        if [ -e "poetry.lock" ]; then
+          echo "Found poetry.lock file: using poetry "
+          python -m pip install poetry poetry-plugin-export
+          poetry export --with=dev -f requirements.txt --output requirements.txt
+          python -m pip install --user -r requirements.txt
+        elif [ -n "$(params.requirements_file)" ] && [ -e "$(params.requirements_file)" ]; then
+          python -m pip install --user -r "$(params.requirements_file)"
+        fi
+
+        # Make sure pylint is installed
+        python -m pip install pylint
+
+        echo "***** Running Linting *****"
+        pylint $@ "$(params.path)"
+      args:
+        - "$(params.args)"
+
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: pytest-env
   labels:
     app.kubernetes.io/version: "0.1"
   annotations:
     tekton.dev/categories: Testing
     tekton.dev/pipelines.minVersion: "0.17.0"
-    tekton.dev/tags: python, green
-    tekton.dev/displayName: "green tests"
-    tekton.dev/platforms: "linux/amd64"
+    tekton.dev/tags: python, pytest
+    tekton.dev/displayName: "pytest tests"
+    tekton.dev/platforms: "linux/amd64,linux/s390x,linux/ppc64le"
 spec:
   workspaces:
     - name: source
   description: >-
-    This task can be used to perform unit tests with green.
+    This task can be used to perform unit tests with pytest.
+    It supports both requirements.txt and poetry.lock files.
 
-    If you define a secret with the key `database_uri`
-    it will create an environment variable named DATABASE_URI
-    that can be used to connect to a test database.
+    It also has the ability to create an environment variable
+    that is sourced from a Secret. This allows you to define
+    credentials that can be used to connect to a test database.
   params:
-    - name: ARGS
-      description: The additional arguments to be used with green
-      type: string
-      default: "-vvv --processes=1 --run-coverage --minimum-coverage=95"
+    - name: PYTEST_ARGS
+      description: The arguments to pass to the pytest CLI.
+      type: array
+      default: []
     - name: SECRET_NAME
       description: The name of the secret containing a database_uri key
       type: string
@@ -33,8 +98,8 @@ spec:
       type: string
       default: "database_uri"
   steps:
-    - name: green
-      image: python:3.11-slim
+    - name: pytest
+      image: docker.io/python:3.11-slim
       workingDir: $(workspaces.source.path)
       env:
        - name: DATABASE_URI
@@ -45,13 +110,26 @@ spec:
       script: |
         #!/bin/bash
         set -e
+        export PATH=$PATH:$HOME/.local/bin:
 
         echo "***** Installing dependencies *****"
-        python -m pip install --upgrade pip wheel
-        pip install -qr requirements.txt
+        if [ -e "poetry.lock" ]; then
+          echo "Found poetry.lock file: using poetry "
+          python -m pip install poetry poetry-plugin-export
+          poetry export --with=dev -f requirements.txt --output requirements.txt
+          python -m pip install --user -r requirements.txt
+        elif -e "requirements.txt" ]; then
+          python -m pip install --user -r requirements.txt
+        fi
+
+        # Make sure pylint is installed
+        python -m pip install pytest
 
         echo "***** Running Tests *****"
-        green $(params.ARGS)
+        pytest --version
+        pytest
+      args:
+        - "$(params.PYTEST_ARGS)"
 
 ---
 apiVersion: tekton.dev/v1beta1
@@ -73,9 +151,6 @@ spec:
     This task will update the deployment.yaml with the latest image name
     and then apply that yaml file and it's service file.
   params:
-  - name: old_image_name
-    description: The fully qualified name of the old image to replace
-    type: string
   - name: image_name
     description: The fully qualified name of the new image to deploy
     type: string
@@ -95,10 +170,17 @@ spec:
 
           echo Applying manifests in $(inputs.params.manifest_dir) directory
 
+          echo "**********************************************************************"
+          echo "Installing YQ..."
+          echo "**********************************************************************"
+          wget -qO /usr/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          chmod a+x /usr/bin/yq
+
           echo "*********************  DEPLOYMENT  ***********************"
           echo "Deploying $(inputs.params.image_name) ..."
 
-          sed -i 's|'"$(inputs.params.old_image_name)"'|'"$(inputs.params.image_name)"'|g' $(inputs.params.manifest_dir)/deployment.yaml
+          yq -e -i '.spec.template.spec.containers[0].image="$(inputs.params.image_name)"' $(inputs.params.manifest_dir)/deployment.yaml
+          # sed -i 's|'"$(inputs.params.old_image_name)"'|'"$(inputs.params.image_name)"'|g' $(inputs.params.manifest_dir)/deployment.yaml
           cat $(inputs.params.manifest_dir)/deployment.yaml
 
           echo "************************************************************"
@@ -145,3 +227,60 @@ spec:
           echo Applying manifests in $(inputs.params.manifest_dir) directory
           oc apply -f $(inputs.params.manifest_dir)
           echo -----------------------------------
+
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: behave
+  labels:
+    app.kubernetes.io/version: "0.1"
+  annotations:
+    tekton.dev/categories: Testing
+    tekton.dev/pipelines.minVersion: "0.17.0"
+    tekton.dev/tags: python, bdd, behave
+    tekton.dev/displayName: "bdd tests"
+    tekton.dev/platforms: "linux/amd64"
+spec:
+  workspaces:
+    - name: source
+  description: >-
+    This task can be used to perform bdd tests with behave.
+  params:
+    - name: BASE_URL
+      description: The url of the application to test
+      type: string
+    - name: WAIT_SECONDS
+      description: The number of seconds to wait for a reply
+      type: string
+      default: "60"
+    - name: DRIVER
+      description: The web driver to use (chrome or firefox)
+      type: string
+      default: "chrome"
+  steps:
+    - name: behave
+      image: rofrano/pipeline-selenium
+      workingDir: $(workspaces.source.path)
+      env:
+       - name: BASE_URL
+         value: $(params.BASE_URL)
+       - name: WAIT_SECONDS
+         value: $(params.WAIT_SECONDS)
+       - name: DRIVER
+         value: $(params.DRIVER)
+      script: |
+        #!/bin/bash
+        set -e
+        export PATH=$PATH:$HOME/.local/bin:
+
+        echo "***** Installing dependencies *****"
+        if [ -e "poetry.lock" ]; then
+          echo "Found poetry.lock file: using poetry"
+          python -m pip install poetry poetry-plugin-export
+          poetry export --with=dev -f requirements.txt --output requirements.txt
+        fi
+        python -m pip install --user -r requirements.txt
+
+        echo "***** Running Tests *****"
+        behave
