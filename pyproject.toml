@@ -45,6 +45,9 @@ per-file-ignores = [
 max-line-length = 127
 count = true
 
+[tool.black]
+line-length = 127
+
 [tool.pylint.'MESSAGES CONTROL']
 disable = "no-member,protected-access,global-statement"
 
