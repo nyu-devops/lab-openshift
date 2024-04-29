@@ -31,7 +31,7 @@ spec:
       description: The arguments to pass to the pylint CLI.
       type: array
       default: []
-    - name: requirements_file
+    - name: requirements-file
       description: The name of the requirements file inside the source location
       default: "requirements.txt"
   steps:
@@ -49,8 +49,8 @@ spec:
           python -m pip install poetry poetry-plugin-export
           poetry export --with=dev -f requirements.txt --output requirements.txt
           python -m pip install --user -r requirements.txt
-        elif [ -n "$(params.requirements_file)" ] && [ -e "$(params.requirements_file)" ]; then
-          python -m pip install --user -r "$(params.requirements_file)"
+        elif [ -n "$(params.requirements-file)" ] && [ -e "$(params.requirements-file)" ]; then
+          python -m pip install --user -r "$(params.requirements-file)"
         fi
 
         # Make sure pylint is installed
@@ -85,15 +85,15 @@ spec:
     that is sourced from a Secret. This allows you to define
     credentials that can be used to connect to a test database.
   params:
-    - name: PYTEST_ARGS
+    - name: pytest-args
       description: The arguments to pass to the pytest CLI.
       type: array
       default: []
-    - name: SECRET_NAME
+    - name: secret-name
       description: The name of the secret containing a database_uri key
       type: string
       default: "postgres-creds"
-    - name: SECRET_KEY
+    - name: secret-key
       description: The name of the key that contains the database uri
       type: string
       default: "database_uri"
@@ -105,8 +105,8 @@ spec:
        - name: DATABASE_URI
          valueFrom:
            secretKeyRef:
-             name: $(params.SECRET_NAME)
-             key: $(params.SECRET_KEY)
+             name: $(params.secret-name)
+             key: $(params.secret-key)
       script: |
         #!/bin/bash
         set -e
@@ -129,7 +129,7 @@ spec:
         pytest --version
         pytest
       args:
-        - "$(params.PYTEST_ARGS)"
+        - "$(params.pytest-args)"
 
 ---
 apiVersion: tekton.dev/v1beta1
@@ -151,10 +151,10 @@ spec:
     This task will update the deployment.yaml with the latest image name
     and then apply that yaml file and it's service file.
   params:
-  - name: image_name
+  - name: image-name
     description: The fully qualified name of the new image to deploy
     type: string
-  - name: manifest_dir
+  - name: manifest-dir
     description: The directory in source that contains yaml manifests
     type: string
     default: "k8s"
@@ -168,7 +168,7 @@ spec:
           #!/bin/bash
           set -e
 
-          echo Applying manifests in $(inputs.params.manifest_dir) directory
+          echo Applying manifests in $(inputs.params.manifest-dir) directory
 
           echo "**********************************************************************"
           echo "Installing YQ..."
@@ -177,16 +177,15 @@ spec:
           chmod a+x /usr/bin/yq
 
           echo "*********************  DEPLOYMENT  ***********************"
-          echo "Deploying $(inputs.params.image_name) ..."
+          echo "Deploying $(inputs.params.image-name) ..."
 
-          yq -e -i '.spec.template.spec.containers[0].image="$(inputs.params.image_name)"' $(inputs.params.manifest_dir)/deployment.yaml
-          # sed -i 's|'"$(inputs.params.old_image_name)"'|'"$(inputs.params.image_name)"'|g' $(inputs.params.manifest_dir)/deployment.yaml
-          cat $(inputs.params.manifest_dir)/deployment.yaml
+          yq -e -i '.spec.template.spec.containers[0].image="$(inputs.params.image-name)"' $(inputs.params.manifest-dir)/deployment.yaml
+          cat $(inputs.params.manifest-dir)/deployment.yaml
 
           echo "************************************************************"
           echo "OC APPLY..."
-          oc apply -f $(inputs.params.manifest_dir)/deployment.yaml
-          oc apply -f $(inputs.params.manifest_dir)/service.yaml
+          oc apply -f $(inputs.params.manifest-dir)/deployment.yaml
+          oc apply -f $(inputs.params.manifest-dir)/service.yaml
 
           echo "************************************************************"
           sleep 3
@@ -213,7 +212,7 @@ spec:
   description: >-
     This task will deploy all of the yaml files in the manifest folder.
   params:
-  - name: manifest_dir
+  - name: manifest-dir
     description: The directory in source that contains yaml manifests
     type: string
     default: "k8s"
@@ -224,8 +223,8 @@ spec:
       command: ["/bin/bash", "-c"]
       args:
         - |-
-          echo Applying manifests in $(inputs.params.manifest_dir) directory
-          oc apply -f $(inputs.params.manifest_dir)
+          echo Applying manifests in $(inputs.params.manifest-dir) directory
+          oc apply -f $(inputs.params.manifest-dir)
           echo -----------------------------------
 
 ---
@@ -247,14 +246,14 @@ spec:
   description: >-
     This task can be used to perform bdd tests with behave.
   params:
-    - name: BASE_URL
+    - name: base-url
       description: The url of the application to test
       type: string
-    - name: WAIT_SECONDS
+    - name: wait-seconds
       description: The number of seconds to wait for a reply
       type: string
       default: "60"
-    - name: DRIVER
+    - name: driver
       description: The web driver to use (chrome or firefox)
       type: string
       default: "chrome"
@@ -264,11 +263,11 @@ spec:
       workingDir: $(workspaces.source.path)
       env:
        - name: BASE_URL
-         value: $(params.BASE_URL)
+         value: $(params.base-url)
        - name: WAIT_SECONDS
-         value: $(params.WAIT_SECONDS)
+         value: $(params.wait-seconds)
        - name: DRIVER
-         value: $(params.DRIVER)
+         value: $(params.driver)
       script: |
         #!/bin/bash
         set -e

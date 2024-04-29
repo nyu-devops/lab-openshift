@@ -8,28 +8,28 @@ spec:
   workspaces:
     - name: pipeline-workspace
   params:
-    - name: GIT_REPO
+    - name: git-repo
       description: The URL to the git repo
       type: string
-    - name: GIT_REF
+    - name: git-ref
       description: The reference (branch or ref)
       type: string
       default: master
-    - name: APP_NAME
+    - name: app-name
       description: Name of the application
       type: string
       default: petshop
-    - name: IMAGE_NAME
+    - name: image-name
       description: The name of the image to build
       type: string
-      default: 'image-registry.openshift-image-registry.svc:5000/$(context.pipelineRun.namespace)/$(params.APP_NAME):latest'
+      default: 'image-registry.openshift-image-registry.svc:5000/$(context.pipelineRun.namespace)/$(params.app-name):latest'
   tasks:
     - name: git-clone
       params:
         - name: url
-          value: $(params.GIT_REPO)
+          value: $(params.git-repo)
         - name: revision
-          value: $(params.GIT_REF)
+          value: $(params.git-ref)
         - name: refspec
           value: ''
         - name: submodules
@@ -73,7 +73,7 @@ spec:
           value: service
         - name: args
           value: []
-        - name: requirements_file
+        - name: requirements-file
           value: requirements.txt
       runAfter:
         - git-clone
@@ -85,14 +85,14 @@ spec:
           workspace: pipeline-workspace
     - name: testing
       params:
-        - name: PYTEST_ARGS
+        - name: pytest-args
           value:
             - '--pspec'
             - '--cov=service'
             - '--cov-fail-under=95'
-        - name: SECRET_NAME
+        - name: secret-name
           value: postgres-creds
-        - name: SECRET_KEY
+        - name: secret-key
           value: database_uri
       runAfter:
         - git-clone
@@ -105,7 +105,7 @@ spec:
     - name: buildah
       params:
         - name: IMAGE
-          value: $(params.IMAGE_NAME)
+          value: $(params.image-name)
         - name: BUILDER_IMAGE
           value: 'registry.redhat.io/rhel8/buildah@sha256:b48f410efa0ff8ab0db6ead420a5d8d866d64af846fece5efb185230d7ecf591'
         - name: STORAGE_DRIVER
@@ -135,9 +135,9 @@ spec:
           workspace: pipeline-workspace
     - name: deploy-image
       params:
-        - name: image_name
-          value: $(params.IMAGE_NAME)
-        - name: manifest_dir
+        - name: image-name
+          value: $(params.image-name)
+        - name: manifest-dir
           value: k8s
       runAfter:
         - buildah
