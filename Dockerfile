@@ -8,7 +8,7 @@ WORKDIR /app
 COPY pyproject.toml poetry.lock ./
 RUN python -m pip install --upgrade pip poetry && \
     poetry config virtualenvs.create false && \
-    poetry install --without dev
+    poetry install --no-root --without dev
 
 # Copy the application contents
 COPY wsgi.py .
