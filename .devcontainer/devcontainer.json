@@ -45,7 +45,6 @@
 				"njpwerner.autodocstring",
 				"wholroyd.jinja",
 				"ms-vscode.makefile-tools",
-				"tamasfe.even-better-toml",
 				"yzhang.markdown-all-in-one",
 				"DavidAnson.vscode-markdownlint",
 				"bierner.github-markdown-preview",
@@ -57,13 +56,14 @@
 				"hbenl.vscode-test-explorer",
 				"LittleFoxTeam.vscode-python-test-adapter",
 				"redhat.vscode-yaml",
-                "redhat.vscode-openshift-connector",
-				"ms-azuretools.vscode-docker",
-				"ms-kubernetes-tools.vscode-kubernetes-tools",
-				"inercia.vscode-k3d",
 				"rangav.vscode-thunder-client",
-				"bbenoist.vagrant",
-				"streetsidesoftware.code-spell-checker"
+				"ms-azuretools.vscode-docker",
+				"redhat.fabric8-analytics",
+				"inercia.vscode-k3d",
+				"ms-kubernetes-tools.vscode-kubernetes-tools",
+                "redhat.vscode-openshift-connector",
+				"streetsidesoftware.code-spell-checker",
+				"bbenoist.vagrant"
 			]
 		}
 	},

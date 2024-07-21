@@ -27,13 +27,13 @@ clean:	## Removes all dangling build cache
 .PHONY: venv
 venv: ## Create a Python virtual environment
 	$(info Creating Python 3 virtual environment...)
-	python3 -m venv .venv
+	poetry shell
 
 .PHONY: install
-install: ## Install dependencies
+install: ## Install Python dependencies
 	$(info Installing dependencies...)
-	sudo python3 -m pip install --upgrade pip wheel
-	sudo pip install -r requirements.txt
+	poetry config virtualenvs.create false
+	poetry install
 
 .PHONY: lint
 lint: ## Run the linter
