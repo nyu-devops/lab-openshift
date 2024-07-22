@@ -14,23 +14,23 @@
 # limitations under the License.
 ######################################################################
 
-# spell: ignore Rofrano jsonify restx dbname
+# spell: ignore Rofrano jsonify restx dbname healthcheck
 """
 Pet Store Service with UI
 """
 from flask import jsonify, request, url_for, make_response, abort
+from flask import current_app as app  # Import Flask application
 from service.models import Pet, Gender
 from service.common import status  # HTTP Status Codes
-from . import app
 
 
 ######################################################################
 # GET HEALTH CHECK
 ######################################################################
 @app.route("/health")
-def healthcheck():
+def health_check():
     """Let them know our heart is still beating"""
-    return make_response(jsonify(status=200, message="OK"), status.HTTP_200_OK)
+    return jsonify(status=200, message="Healthy"), status.HTTP_200_OK
 
 
 ######################################################################
@@ -39,6 +39,7 @@ def healthcheck():
 @app.route("/")
 def index():
     """Base URL for our service"""
+    app.logger.info("Request for Home Page.")
     return app.send_static_file("index.html")
 
 
@@ -69,9 +70,12 @@ def list_pets():
         pets = Pet.find_by_availability(available_value)
     elif gender:
         app.logger.info("Find by gender: %s", gender)
-        # create enum from string
-        gender_value = getattr(Gender, gender.upper())
-        pets = Pet.find_by_gender(gender_value)
+        # try and create an enum from string
+        try:
+            gender_value = Gender[gender.upper()]
+            pets = Pet.find_by_gender(gender_value)
+        except KeyError:
+            app.logger.info("Invalid Gender: [%s] %s", gender)
     else:
         app.logger.info("Find all")
         pets = Pet.all()

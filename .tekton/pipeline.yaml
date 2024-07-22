@@ -73,7 +73,7 @@ spec:
           value: service
         - name: args
           value: []
-        - name: requirements_file
+        - name: requirements-file
           value: requirements.txt
       runAfter:
         - git-clone
@@ -85,14 +85,14 @@ spec:
           workspace: pipeline-workspace
     - name: testing
       params:
-        - name: PYTEST_ARGS
+        - name: pytest-args
           value:
             - '--pspec'
             - '--cov=service'
             - '--cov-fail-under=95'
-        - name: SECRET_NAME
+        - name: secret-name
           value: postgres-creds
-        - name: SECRET_KEY
+        - name: secret-key
           value: database_uri
       runAfter:
         - git-clone
@@ -135,9 +135,9 @@ spec:
           workspace: pipeline-workspace
     - name: deploy-image
       params:
-        - name: image_name
+        - name: IMAGE_NAME
           value: $(params.IMAGE_NAME)
-        - name: manifest_dir
+        - name: manifest-dir
           value: k8s
       runAfter:
         - buildah

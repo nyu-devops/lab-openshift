@@ -27,13 +27,13 @@ clean:	## Removes all dangling build cache
 .PHONY: venv
 venv: ## Create a Python virtual environment
 	$(info Creating Python 3 virtual environment...)
-	python3 -m venv .venv
+	poetry shell
 
 .PHONY: install
-install: ## Install dependencies
+install: ## Install Python dependencies
 	$(info Installing dependencies...)
-	sudo python3 -m pip install --upgrade pip wheel
-	sudo pip install -r requirements.txt
+	poetry config virtualenvs.create false
+	poetry install
 
 .PHONY: lint
 lint: ## Run the linter
@@ -42,8 +42,8 @@ lint: ## Run the linter
 	flake8 service tests --count --max-complexity=10 --max-line-length=127 --statistics
 	pylint service tests --max-line-length=127
 
-.PHONY: tests
-tests: ## Run the unit tests
+.PHONY: test
+test: ## Run the unit tests
 	$(info Running tests...)
 	export RETRY_COUNT=1; pytest --pspec --cov=service --cov-fail-under=95 --disable-warnings
 
@@ -62,7 +62,7 @@ secret: ## Generate a secret hex key
 .PHONY: cluster
 cluster: ## Create a K3D Kubernetes cluster with load balancer and registry
 	$(info Creating Kubernetes cluster with a registry and 2 worker nodes...)
-	k3d cluster create nyu-devops --agents 2 --registry-create cluster-registry:0.0.0.0:32000 --port '8080:80@loadbalancer'
+	k3d cluster create nyu-devops --agents 2 --registry-create cluster-registry:0.0.0.0:5000 --port '8080:80@loadbalancer'
 
 .PHONY: cluster-rm
 cluster-rm: ## Remove a K3D Kubernetes cluster
