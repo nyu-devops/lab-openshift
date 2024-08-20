@@ -23,6 +23,7 @@
 				"git.mergeEditor": true,
 				"markdown-preview-github-styles.colorTheme": "light",
 				"makefile.extensionOutputFolder": "/tmp",
+				"makefile.configureOnOpen": false,
 				"python.testing.unittestEnabled": false,
 				"python.testing.pytestEnabled": true,			
 				"python.testing.pytestArgs": [
