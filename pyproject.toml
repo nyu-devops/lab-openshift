@@ -18,15 +18,15 @@ gunicorn = "^22.0.0"
 
 [tool.poetry.group.dev.dependencies]
 honcho = "^1.1.0"
-pylint = "^3.2.2"
-flake8 = "^7.0.0"
+pylint = "^3.2.5"
+flake8 = "^7.1.0"
 black = "^24.4.2"
-pytest = "^8.2.1"
+pytest = "^8.3.1"
 pytest-pspec = "^0.0.4"
 pytest-cov = "^5.0.0"
 factory-boy = "^3.3.0"
-coverage = "^7.5.3"
-httpie = "^3.2.2"
+coverage = "^7.6.0"
+httpie = "^3.2.3"
 poetry-plugin-export = "^1.7.1"
 
 [build-system]
