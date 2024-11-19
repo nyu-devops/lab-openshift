@@ -27,7 +27,7 @@ RUN sudo python -m pip install --upgrade pip poetry && \
     sudo poetry config virtualenvs.create false && \
     sudo poetry install
 
-ENV PORT 8080
+ENV PORT=8080
 EXPOSE $PORT
 
 # Enable color terminal for docker exec bash

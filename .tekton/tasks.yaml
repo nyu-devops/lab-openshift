@@ -45,10 +45,10 @@ spec:
 
         echo "***** Installing dependencies *****"
         if [ -e "poetry.lock" ]; then
-          echo "Found poetry.lock file: using poetry "
-          python -m pip install poetry poetry-plugin-export
-          poetry export --with=dev -f requirements.txt --output requirements.txt
-          python -m pip install --user -r requirements.txt
+          echo "Found poetry.lock file: using poetry ..."
+          python -m pip install --upgrade pip poetry
+          poetry config virtualenvs.create false
+          poetry install
         elif [ -n "$(params.requirements-file)" ] && [ -e "$(params.requirements-file)" ]; then
           python -m pip install --user -r "$(params.requirements-file)"
         fi
@@ -114,10 +114,10 @@ spec:
 
         echo "***** Installing dependencies *****"
         if [ -e "poetry.lock" ]; then
-          echo "Found poetry.lock file: using poetry "
-          python -m pip install poetry poetry-plugin-export
-          poetry export --with=dev -f requirements.txt --output requirements.txt
-          python -m pip install --user -r requirements.txt
+          echo "Found poetry.lock file: using poetry ..."
+          python -m pip install --upgrade pip poetry
+          poetry config virtualenvs.create false
+          poetry install
         elif -e "requirements.txt" ]; then
           python -m pip install --user -r requirements.txt
         fi
