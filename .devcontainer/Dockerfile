@@ -1,5 +1,5 @@
 # Image for a Python 3 development environment
-FROM python:3.11-slim
+FROM quay.io/rofrano/python:3.11-slim
 
 # Add any tools that are needed beyond Python 3.11
 RUN apt-get update && \
@@ -12,7 +12,7 @@ ARG USERNAME=vscode
 ARG USER_UID=1000
 ARG USER_GID=$USER_UID
 
-# Create the user with passwordless sudo privileges
+# Create the user with password-less sudo privileges
 RUN groupadd --gid $USER_GID $USERNAME \
     && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME -s /bin/bash \
     && usermod -aG sudo $USERNAME \
@@ -22,10 +22,9 @@ RUN groupadd --gid $USER_GID $USERNAME \
 
 # Set up the Python development environment
 WORKDIR /app
-COPY pyproject.toml poetry.lock ./
-RUN sudo python -m pip install --upgrade pip poetry && \
-    sudo poetry config virtualenvs.create false && \
-    sudo poetry install
+COPY Pipfile Pipfile.lock ./
+RUN python -m pip install --upgrade pip pipenv && \
+    pipenv install --system --dev
 
 ENV PORT=8080
 EXPOSE $PORT
