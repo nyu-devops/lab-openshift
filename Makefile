@@ -100,7 +100,7 @@ knative: ## Install Knative
 	# kubectl apply -f https://github.com/knative/eventing/releases/download/knative-v1.12.0/eventing-core.yaml
 
 .PHONY: deploy
-depoy: ## Deploy the service on local Kubernetes
+deploy: ## Deploy the service on local Kubernetes
 	$(info Deploying service locally...)
 	kubectl apply -f k8s/
 
@@ -119,12 +119,12 @@ init:	## Creates the buildx instance
 
 .PHONY: build
 build:	## Build the project container image for local platform
-	$(info Building $(IMAGE) for $(PLATFORM)...)
+	$(info Building $(IMAGE)...)
 	docker build --rm --pull --tag $(IMAGE) .
 
 .PHONY: push
 push:	## Push the image to the container registry
-	$(info Pusing $(IMAGE) for $(PLATFORM)...)
+	$(info Pushing $(IMAGE)...)
 	docker push $(IMAGE)
 
 .PHONY: buildx

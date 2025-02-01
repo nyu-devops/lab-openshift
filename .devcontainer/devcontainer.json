@@ -12,6 +12,7 @@
 					"sqlalchemy",
 					"psycopg",
 					"pytest",
+					"pipenv",
 					"tekton",
 					"creds",
 					"virtualenvs"
@@ -57,9 +58,7 @@
 				"hbenl.vscode-test-explorer",
 				"LittleFoxTeam.vscode-python-test-adapter",
 				"redhat.vscode-yaml",
-				"rangav.vscode-thunder-client",
 				"ms-azuretools.vscode-docker",
-				"redhat.fabric8-analytics",
 				"inercia.vscode-k3d",
 				"ms-kubernetes-tools.vscode-kubernetes-tools",
                 "redhat.vscode-openshift-connector",
