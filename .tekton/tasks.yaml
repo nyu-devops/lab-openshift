@@ -17,8 +17,9 @@ spec:
     - name: source
       description: The workspace with the source code.
   description: >-
-    Use to run pylint on the provided input source. If Poetry is being used
-    it will detect the poetry.lock file and install via requirements export.
+    Use to run pylint on the provided input source. 
+    If Poetry or Pipenv is being used it will detect 
+    the poetry.lock and Pipfile file and install using them.
   params:
     - name: image
       description: The container image with pylint
@@ -49,6 +50,10 @@ spec:
           python -m pip install --upgrade pip poetry
           poetry config virtualenvs.create false
           poetry install
+        elif [ -e "Pipfile" ]; then
+          echo "Found Pipfile file: using pipenv ..."
+          python -m pip install --upgrade pip pipenv
+          pipenv install --system --dev
         elif [ -n "$(params.requirements-file)" ] && [ -e "$(params.requirements-file)" ]; then
           python -m pip install --user -r "$(params.requirements-file)"
         fi
@@ -79,7 +84,7 @@ spec:
     - name: source
   description: >-
     This task can be used to perform unit tests with pytest.
-    It supports both requirements.txt and poetry.lock files.
+    It supports both requirements.txt, Pipfile, & poetry.lock files.
 
     It also has the ability to create an environment variable
     that is sourced from a Secret. This allows you to define
@@ -118,6 +123,10 @@ spec:
           python -m pip install --upgrade pip poetry
           poetry config virtualenvs.create false
           poetry install
+        elif [ -e "Pipfile" ]; then
+          echo "Found Pipfile file: using pipenv ..."
+          python -m pip install --upgrade pip pipenv
+          pipenv install --system --dev
         elif -e "requirements.txt" ]; then
           python -m pip install --user -r requirements.txt
         fi
@@ -259,7 +268,7 @@ spec:
       default: "chrome"
   steps:
     - name: behave
-      image: rofrano/pipeline-selenium
+      image: quay.io/rofrano/pipeline-selenium
       workingDir: $(workspaces.source.path)
       env:
        - name: BASE_URL
@@ -278,6 +287,10 @@ spec:
           echo "Found poetry.lock file: using poetry"
           python -m pip install poetry poetry-plugin-export
           poetry export --with=dev -f requirements.txt --output requirements.txt
+        elif [ -e "Pipfile" ]; then
+          echo "Found Pipfile file: using pipenv ..."
+          python -m pip install --upgrade pip pipenv
+          pipenv requirements --dev > requirements.txt
         fi
         python -m pip install --user -r requirements.txt
 
