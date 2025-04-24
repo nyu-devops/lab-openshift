@@ -23,7 +23,7 @@ spec:
   params:
     - name: image
       description: The container image with pylint
-      default: docker.io/python:3.11-slim  
+      default: quay.io/rofrano/python:3.11-slim
     - name: path
       description: The path to the module which should be analyzed by pylint
       default: "."
@@ -104,7 +104,7 @@ spec:
       default: "database_uri"
   steps:
     - name: pytest
-      image: docker.io/python:3.11-slim
+      image: quay.io/rofrano/python:3.11-slim
       workingDir: $(workspaces.source.path)
       env:
        - name: DATABASE_URI
