@@ -8,7 +8,6 @@ spec:
   volumeMode: Filesystem
   accessModes:
     - ReadWriteOnce
-  persistentVolumeReclaimPolicy: Recycle
   hostPath:
     path: /data/pv0001
   # storageClassName: "default"
