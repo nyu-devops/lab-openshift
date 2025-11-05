@@ -1,5 +1,8 @@
+##################################################
 # Image for a Python 3 development environment
-FROM quay.io/rofrano/python:3.11-slim
+##################################################
+# cSpell: disable
+FROM quay.io/rofrano/python:3.12-slim
 
 # Add any tools that are needed beyond Python 3.11
 RUN apt-get update && \

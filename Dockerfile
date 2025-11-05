@@ -1,7 +1,7 @@
 ##################################################
 # Create production image
 ##################################################
-FROM quay.io/rofrano/python:3.11-slim
+FROM quay.io/rofrano/python:3.12-slim
 
 # Set up the Python production environment
 WORKDIR /app
