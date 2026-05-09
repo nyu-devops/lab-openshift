@@ -93,6 +93,11 @@ knative: ## Install Knative
 	# kubectl apply -f https://github.com/knative/eventing/releases/download/knative-v1.12.0/eventing-crds.yaml
 	# kubectl apply -f https://github.com/knative/eventing/releases/download/knative-v1.12.0/eventing-core.yaml
 
+.PHONY: import
+import: ## Import the image into the local K3D cluster
+	$(info Importing $(IMAGE) into k3d cluster $(CLUSTER)...)
+	k3d image import --cluster $(CLUSTER) $(IMAGE)
+
 .PHONY: deploy
 deploy: ## Deploy the service on local Kubernetes
 	$(info Deploying service locally...)
