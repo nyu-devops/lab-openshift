@@ -130,6 +130,25 @@ If the VM is no longer needed you can remove it with:
 vagrant destroy
 ```
 
+## Query the local registry
+
+You can query the images in the local Kubernetes registry with the following
+`curl` command:
+
+```bash
+$ curl -s cluster-registry:5000/v2/_catalog
+
+{"repositories":["hitcounter"]}
+```
+
+Then you can query the image tags with:
+
+```bash
+$ curl -s cluster-registry:5000/v2/hitcounter/tags/list
+
+{"name":"hitcounter","tags":["1.0"]}
+```
+
 ## What's featured in the project?
 
     * service/routes.py -- the main Service routes using Python Flask
@@ -139,7 +158,7 @@ vagrant destroy
 
 ## License
 
-Copyright (c) 2016-2023 John Rofrano. All rights reserved.
+Copyright (c) 2016-2026 John Rofrano. All rights reserved.
 
 Licensed under the Apache License. See [LICENSE](LICENSE)
 
