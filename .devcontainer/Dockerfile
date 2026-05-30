@@ -2,7 +2,7 @@
 # Image for a Python 3 development environment
 ##################################################
 # cSpell: disable
-FROM quay.io/rofrano/nyu-devops-base:sp26
+FROM quay.io/rofrano/nyu-devops-base:su26
 
 ARG USERNAME=vscode
 USER root

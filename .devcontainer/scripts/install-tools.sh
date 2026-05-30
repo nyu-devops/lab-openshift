@@ -63,7 +63,7 @@ sudo install -c -m 0755 devspace /usr/local/bin
 echo "**********************************************************************"
 echo "Installing Stern..."
 echo "**********************************************************************"
-curl -L -o stern.tar.gz "https://github.com/stern/stern/releases/download/v1.33.1/stern_1.33.1_linux_$ARCH.tar.gz"
+curl -L -o stern.tar.gz "https://github.com/stern/stern/releases/download/v1.34.0/stern_1.34.0_linux_$ARCH.tar.gz"
 tar xvzf stern.tar.gz
 sudo install -c -m 0755 stern /usr/local/bin
 rm stern.tar.gz LICENSE
@@ -71,7 +71,7 @@ rm stern.tar.gz LICENSE
 echo "**********************************************************************"
 echo "Installing Knative CLI..."
 echo "**********************************************************************"
-curl -L -o kn "https://github.com/knative/client/releases/download/knative-v1.21.0/kn-linux-$ARCH"
+curl -L -o kn "https://github.com/knative/client/releases/download/knative-v1.22.0/kn-linux-$ARCH"
 sudo install -c -m 0755 kn /usr/local/bin
 rm kn
 
@@ -79,9 +79,9 @@ echo "**********************************************************************"
 echo "Installing Tekton CLI..."
 echo "**********************************************************************"
 if [ $ARCH == amd64 ]; then
-    curl -L https://github.com/tektoncd/cli/releases/download/v0.43.1/tkn_0.43.1_Linux_x86_64.tar.gz --output tekton.tar.gz
+    curl -L https://github.com/tektoncd/cli/releases/download/v0.45.0/tkn_0.45.0_Linux_x86_64.tar.gz --output tekton.tar.gz
 else
-    curl -L https://github.com/tektoncd/cli/releases/download/v0.43.1/tkn_0.43.1_Linux_aarch64.tar.gz --output tekton.tar.gz
+    curl -L https://github.com/tektoncd/cli/releases/download/v0.45.0/tkn_0.45.0_Linux_aarch64.tar.gz --output tekton.tar.gz
 fi;
 tar xvzf tekton.tar.gz tkn
 sudo install -c -m 0755 tkn /usr/local/bin

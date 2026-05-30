@@ -1,4 +1,4 @@
-# These can be overidden with env vars.
+# These can be overridden with env vars.
 REGISTRY ?= cluster-registry:5000
 IMAGE_NAME ?= petshop
 IMAGE_TAG ?= 1.0
@@ -54,9 +54,16 @@ secret: ## Generate a secret hex key
 ##@ Kubernetes
 
 .PHONY: cluster
-cluster: ## Create a K3D Kubernetes cluster with load balancer and registry
-	$(info Creating Kubernetes cluster $(CLUSTER) with a registry and 2 worker nodes...)
-	k3d cluster create $(CLUSTER) --agents 2 --registry-create cluster-registry:0.0.0.0:5000 --port '8080:80@loadbalancer'
+cluster: ## Create or reuse a K3D Kubernetes cluster with 2 worker nodes
+	@if k3d cluster list | awk 'NR > 1 {print $$1}' | grep -Fxq '$(CLUSTER)'; then \
+		echo "Kubernetes cluster $(CLUSTER) already exists; reusing it..."; \
+	else \
+		echo "Creating Kubernetes cluster $(CLUSTER) with 2 worker nodes..."; \
+		k3d cluster create $(CLUSTER) --agents 2 --registry-create cluster-registry:0.0.0.0:5000 --port '8080:80@loadbalancer'; \
+	fi
+	@mkdir -p $(HOME)/.kube
+	@k3d kubeconfig get $(CLUSTER) > $(HOME)/.kube/config
+	@echo "kubectl context configured for cluster $(CLUSTER)"
 
 .PHONY: cluster-rm
 cluster-rm: ## Remove a K3D Kubernetes cluster
@@ -79,12 +86,6 @@ tekton-clean: ## Clean up all PipelineRuns and TaskRuns
 	tkn pipelinerun ls
 	tkn pipelinerun rm --all -f
 
-.PHONY: clustertasks
-clustertasks: ## Create Tekton Cluster Tasks
-	$(info Creating Tekton Cluster Tasks...)
-	wget -qO - https://raw.githubusercontent.com/tektoncd/catalog/main/task/openshift-client/0.2/openshift-client.yaml | sed 's/kind: Task/kind: ClusterTask/g' | kubectl create -f -
-	wget -qO - https://raw.githubusercontent.com/tektoncd/catalog/main/task/buildah/0.4/buildah.yaml | sed 's/kind: Task/kind: ClusterTask/g' | kubectl create -f -
-
 .PHONY: knative
 knative: ## Install Knative
 	$(info Installing Knative in the Cluster...)
@@ -98,10 +99,16 @@ import: ## Import the image into the local K3D cluster
 	$(info Importing $(IMAGE) into k3d cluster $(CLUSTER)...)
 	k3d image import --cluster $(CLUSTER) $(IMAGE)
 
+.PHONY: postgresql
+postgresql: ## Deploys the PostgreSQL database on local Kubernetes
+	$(info Deploying PostgreSQL locally...)
+	oc apply -f k8s/postgresql
+
 .PHONY: deploy
 deploy: ## Deploy the service on local Kubernetes
 	$(info Deploying service locally...)
-	kubectl apply -f k8s/
+	oc apply -f k8s/
+	oc rollout status deployment/petshop
 
 ############################################################
 # COMMANDS FOR BUILDING THE IMAGE
