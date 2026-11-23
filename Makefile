@@ -39,7 +39,7 @@ lint: ## Run the linter
 .PHONY: test
 test: ## Run the unit tests
 	$(info Running tests...)
-	export RETRY_COUNT=1; pytest --pspec --cov=service --cov-fail-under=95 --disable-warnings
+	export RETRY_COUNT=1; pytest --spec --cov=service --cov-fail-under=95 --disable-warnings
 
 .PHONY: run
 run: ## Run the service
