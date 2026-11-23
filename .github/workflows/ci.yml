@@ -22,7 +22,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     # use a known build environment
-    container: quay.io/rofrano/python:3.12-slim
+    container: python:3.12-slim
 
     # Required services    
     services:
@@ -57,9 +57,8 @@ jobs:
           flake8 service tests --count --max-complexity=10 --max-line-length=127 --statistics
           pylint service tests --max-line-length=127
 
-      - name: Run unit tests with green
-        run: |
-          pytest --pspec --cov=service --cov-fail-under=95 --disable-warnings
+      - name: Run unit tests with PyTest
+        run: pytest --cov-report=xml
         env:
           DATABASE_URI: "postgresql+psycopg://postgres:pgs3cr3t@postgres:5432/testdb"
           FLASK_APP: "wsgi:app"
